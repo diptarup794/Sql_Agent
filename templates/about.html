@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card animate-fade-in">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>About SQL Agent
+            </div>
+            <div class="card-body">
+                <h4 class="animate-slide-up">Intelligent Database Assistant</h4>
+                <p class="animate-slide-up" style="animation-delay: 0.1s">SQL Agent is an AI-powered tool that allows you to interact with your SQL databases using natural language. 
+                   Instead of writing complex SQL queries, simply ask questions in plain English, and let our AI do the work for you.</p>
+                
+                <h5 class="mt-4 animate-slide-up" style="animation-delay: 0.2s">Key Features</h5>
+                <ul class="animate-slide-up" style="animation-delay: 0.3s">
+                    <li><strong>Natural Language Queries:</strong> Ask questions about your data in plain English</li>
+                    <li><strong>SQL Transparency:</strong> View the generated SQL queries for each response</li>
+                    <li><strong>Database Schema Understanding:</strong> The AI automatically analyzes your database structure</li>
+                    <li><strong>Intelligent Query Routing:</strong> Uses a supervisor agent to determine the best way to answer your questions</li>
+                </ul>
+                
+                <h5 class="mt-4 animate-slide-up" style="animation-delay: 0.4s">How It Works</h5>
+                <p class="animate-slide-up" style="animation-delay: 0.5s">SQL Agent uses a multi-agent system powered by large language models:</p>
+                <ol class="animate-slide-up" style="animation-delay: 0.6s">
+                    <li>Upload your SQLite database file</li>
+                    <li>Ask questions about your data in natural language</li>
+                    <li>The supervisor agent determines whether to use SQL or RAG (Retrieval Augmented Generation) to answer your question</li>
+                    <li>Get comprehensive answers with the option to view the underlying SQL queries</li>
+                </ol>
+                
+                <div class="alert alert-info mt-4 animate-fade-in" style="animation-delay: 0.7s">
+                    <i class="fas fa-lightbulb me-2"></i><strong>Tip:</strong> For best results, be specific in your questions and mention table names when possible.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

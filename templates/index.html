@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12 mb-4 animate-fade-in">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-database me-2"></i>Database Connection</span>
+            </div>
+            <div class="card-body">
+                <form id="databaseForm" method="post" action="/connect" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="dbFile" class="form-label">Upload SQLite Database File</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="dbFile" name="dbFile" accept=".db,.sqlite,.sqlite3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plug me-1"></i> Connect
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card animate-slide-up">
+            <div class="card-header">
+                <i class="fas fa-comment-dots me-2"></i>SQL Agent Chat
+            </div>
+            <div class="card-body">
+                <div id="chatContainer" class="mb-3" style="max-height: 400px; overflow-y: auto;">
+                    <div class="alert alert-info animate-fade-in">
+                        <i class="fas fa-info-circle me-2"></i>Welcome to SQL Agent! Connect to a database and ask questions in natural language.
+                    </div>
+                    <!-- Chat messages will appear here -->
+                </div>
+                
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-grow text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="spinner-grow text-secondary" role="status" style="animation-delay: 0.2s">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="spinner-grow text-primary" role="status" style="animation-delay: 0.4s">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing your query<span class="dot-animation">...</span></p>
+                </div>
+                
+                <form id="queryForm" method="post" action="/query">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="userQuery" name="query" 
+                               placeholder="Ask a question about your database..." required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dot animation for loading text */
+    .dot-animation {
+        display: inline-block;
+        animation: dotAnimation 1.5s infinite;
+    }
+    
+    @keyframes dotAnimation {
+        0% { opacity: 0.2; }
+        20% { opacity: 1; }
+        100% { opacity: 0.2; }
+    }
+    
+    /* Chat container animations */
+    #chatContainer > div {
+        transition: all 0.3s ease;
+    }
+    
+    /* User query bubble animation */
+    .user-query-bubble {
+        transform-origin: bottom right;
+        animation: bubbleIn 0.3s ease-out;
+    }
+    
+    /* Response bubble animation */
+    .response-bubble {
+        transform-origin: bottom left;
+        animation: bubbleIn 0.3s ease-out;
+    }
+    
+    @keyframes bubbleIn {
+        0% { transform: scale(0.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Store the last SQL query for each response
+    let lastSqlQueries = {};
+    let responseCounter = 0;
+    
+    $(document).ready(function() {
+        // Handle database connection form submission
+        $('#databaseForm').submit(function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Show loading indicator with animation
+            $('#loadingSpinner').fadeIn(300);
+            
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#loadingSpinner').fadeOut(300);
+                    
+                    if (response.status === 'success') {
+                        // Show success toast
+                        showToast(response.db_name ? `Connected to ${response.db_name} successfully!` : 'Database connected successfully!', 'success');
+                        
+                        // Add database info to chat with animation
+                        const dbInfoHtml = `
+                            <div class="card mb-3 animate-fade-in">
+                                <div class="card-header bg-success text-white">
+                                    <i class="fas fa-check-circle me-2"></i>Database Connected
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Database:</strong> ${response.db_name || 'Unknown'}</p>
+                                    <p><strong>Tables:</strong> ${response.tables ? response.tables.join(', ') : 'None found'}</p>
+                                </div>
+                            </div>
+                        `;
+                        $('#chatContainer').append(dbInfoHtml);
+                        
+                        // Scroll to bottom of chat with animation
+                        $('#chatContainer').animate({scrollTop: $('#chatContainer')[0].scrollHeight}, 500);
+                    } else {
+                        showToast(response.message || 'Error connecting to database', 'danger');
+                    }
+                },
+                error: function() {
+                    $('#loadingSpinner').fadeOut(300);
+                    showToast('Error connecting to database', 'danger');
+                }
+            });
+        });
+        
+        // Handle query form submission
+        $('#queryForm').submit(function(e) {
+            e.preventDefault();
+            
+            const query = $('#userQuery').val().trim();
+            if (!query) return;
+            
+            // Add user query to chat with animation
+            const userQueryHtml = `
+                <div class="d-flex justify-content-end mb-3">
+                    <div class="card bg-primary text-white user-query-bubble" style="max-width: 75%;">
+                        <div class="card-body py-2 px-3">
+                            <p class="mb-0">${query}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#chatContainer').append(userQueryHtml);
+            
+            // Clear input field
+            $('#userQuery').val('');
+            
+            // Show loading indicator with animation
+            $('#loadingSpinner').fadeIn(300);
+            
+            // Scroll to bottom of chat with animation
+            $('#chatContainer').animate({scrollTop: $('#chatContainer')[0].scrollHeight}, 500);
+            
+            // Send query to server
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: { query: query },
+                success: function(response) {
+                    $('#loadingSpinner').fadeOut(300);
+                    
+                    if (response.status === 'success') {
+                        responseCounter++;
+                        const responseId = `response-${responseCounter}`;
+                        
+                        // Store SQL query if available
+                        if (response.sql_query) {
+                            lastSqlQueries[responseId] = response.sql_query;
+                        }
+                        
+                        // Format the response
+                        let formattedResult = response.result;
+                        
+                        // Add SQL query button if available
+                        const sqlButtonHtml = response.sql_query ? 
+                            `<button class="btn btn-sm btn-outline-secondary sql-query-btn" onclick="showSqlQuery(lastSqlQueries['${responseId}'])">
+                                <i class="fas fa-code me-1"></i>View SQL
+                            </button>` : '';
+                        
+                        // Add response to chat with animation
+                        const responseHtml = `
+                            <div class="d-flex justify-content-start mb-3">
+                                <div class="card response-bubble" style="max-width: 85%;" id="${responseId}">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                        <span><i class="fas fa-robot me-2"></i>SQL Agent</span>
+                                        ${sqlButtonHtml}
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="query-result">${formattedResult}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        $('#chatContainer').append(responseHtml);
+                    } else {
+                        // Add error response to chat with animation
+                        const errorHtml = `
+                            <div class="d-flex justify-content-start mb-3">
+                                <div class="card bg-light response-bubble" style="max-width: 85%;">
+                                    <div class="card-header bg-danger text-white py-2">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Error
+                                    </div>
+                                    <div class="card-body">
+                                        <p>${response.message || 'An error occurred processing your query'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        $('#chatContainer').append(errorHtml);
+                    }
+                    
+                    // Scroll to bottom of chat with animation
+                    $('#chatContainer').animate({scrollTop: $('#chatContainer')[0].scrollHeight}, 500);
+                },
+                error: function() {
+                    $('#loadingSpinner').fadeOut(300);
+                    
+                    // Add error response to chat with animation
+                    const errorHtml = `
+                        <div class="d-flex justify-content-start mb-3">
+                            <div class="card bg-light response-bubble" style="max-width: 85%;">
+                                <div class="card-header bg-danger text-white py-2">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Error
+                                </div>
+                                <div class="card-body">
+                                    <p>Failed to process your query. Please try again.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('#chatContainer').append(errorHtml);
+                    
+                    // Scroll to bottom of chat with animation
+                    $('#chatContainer').animate({scrollTop: $('#chatContainer')[0].scrollHeight}, 500);
+                }
+            });
+        });
+        
+        // Function to show connection success message
+        function showConnectionSuccess(dbName) {
+            showToast(`Connected to ${dbName} successfully!`, 'success');
+        }
+    });
+</script>
+{% endblock %}

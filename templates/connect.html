@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .animate-fade-in {
+        opacity: 0;
+        animation: fadeIn 0.8s ease-in-out forwards;
+    }
+    
+    .animate-slide-up {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: slideUp 0.6s ease-out forwards;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from { 
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to { 
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .file-upload-container {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+    }
+    
+    .file-upload-container:hover {
+        border-color: #3498db;
+        background-color: #e9f7fe;
+    }
+    
+    .file-upload-icon {
+        font-size: 48px;
+        color: #3498db;
+        margin-bottom: 15px;
+    }
+    
+    .or-divider {
+        display: flex;
+        align-items: center;
+        margin: 20px 0;
+    }
+    
+    .or-divider::before,
+    .or-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .or-divider-text {
+        padding: 0 10px;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .btn-connect {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-connect:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg mt-4 animate-fade-in">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-plug me-2"></i>Connect to Database
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger animate-fade-in">
+                    <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+                </div>
+                {% endif %}
+                
+                <div class="animate-slide-up" style="animation-delay: 0.1s">
+                    <p class="lead">Connect to your SQLite database to start asking questions in natural language.</p>
+                </div>
+                
+                <form id="connectForm" action="/connect" method="post" enctype="multipart/form-data" class="animate-slide-up" style="animation-delay: 0.2s">
+                    <div class="file-upload-container mb-4" id="dropZone">
+                        <div class="file-upload-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h5>Drag & Drop Your Database File</h5>
+                        <p class="text-muted">or click to browse</p>
+                        <input type="file" name="database" id="databaseFile" class="form-control d-none" accept=".db,.sqlite,.sqlite3">
+                        <button type="button" id="browseButton" class="btn btn-outline-primary mt-2">
+                            <i class="fas fa-folder-open me-2"></i>Browse Files
+                        </button>
+                        <div id="fileInfo" class="mt-3 d-none">
+                            <div class="alert alert-info">
+                                <i class="fas fa-file-alt me-2"></i><span id="fileName">No file selected</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg btn-connect">
+                            <i class="fas fa-plug me-2"></i>Connect to Database
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="or-divider animate-slide-up" style="animation-delay: 0.3s">
+                    <span class="or-divider-text">OR</span>
+                </div>
+                
+                <div class="text-center animate-slide-up" style="animation-delay: 0.4s">
+                    <a href="/sample" class="btn btn-success btn-connect">
+                        <i class="fas fa-vial me-2"></i>Use Sample Database
+                    </a>
+                    <p class="text-muted mt-2">Try with our pre-configured sample database</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle browse button click
+        $('#browseButton').click(function() {
+            $('#databaseFile').click();
+        });
+        
+        // Handle file selection
+        $('#databaseFile').change(function() {
+            const file = this.files[0];
+            if (file) {
+                $('#fileName').text(file.name);
+                $('#fileInfo').removeClass('d-none');
+                
+                // Animate the file info appearance
+                $('#fileInfo').css('opacity', 0).animate({
+                    opacity: 1
+                }, 300);
+            }
+        });
+        
+        // Handle drag and drop
+        const dropZone = document.getElementById('dropZone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropZone.classList.add('bg-light');
+            dropZone.style.borderColor = '#3498db';
+        }
+        
+        function unhighlight() {
+            dropZone.classList.remove('bg-light');
+            dropZone.style.borderColor = '#ccc';
+        }
+        
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                $('#databaseFile')[0].files = files;
+                $('#fileName').text(files[0].name);
+                $('#fileInfo').removeClass('d-none');
+                
+                // Animate the file info appearance
+                $('#fileInfo').css('opacity', 0).animate({
+                    opacity: 1
+                }, 300);
+            }
+        }
+        
+        // Form submission with animation
+        $('#connectForm').submit(function() {
+            if ($('#databaseFile')[0].files.length === 0) {
+                // Show error if no file selected
+                if (!$('#fileInfo').hasClass('d-none')) {
+                    $('#fileInfo').addClass('d-none');
+                }
+                
+                const errorHtml = `
+                    <div class="alert alert-danger animate__animated animate__shakeX">
+                        <i class="fas fa-exclamation-circle me-2"></i>Please select a database file
+                    </div>
+                `;
+                
+                if ($('.alert-danger').length) {
+                    $('.alert-danger').replaceWith(errorHtml);
+                } else {
+                    $(this).prepend(errorHtml);
+                }
+                
+                return false;
+            }
+            
+            // Add loading animation
+            const loadingHtml = `
+                <div class="text-center py-3" id="loadingIndicator">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Connecting to database...</p>
+                </div>
+            `;
+            
+            $(this).append(loadingHtml);
+            $(this).find('button[type="submit"]').prop('disabled', true);
+            
+            return true;
+        });
+    });
+</script>
+{% endblock %}
