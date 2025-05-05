@@ -25,6 +25,16 @@ The SQL Agent project is an AI-powered tool that allows users to interact with S
    - **RAG Agent**: For queries requiring contextual understanding or complex reasoning, the RAG Agent is used.
 5. **Get Comprehensive Answers**: The system provides comprehensive answers with the option to view the underlying SQL queries.
 
+
+## Flowchart
+
+Below is a flowchart illustrating the decision logic of the Supervisor Agent:
+
+![Flowchart](flowchart2.png)
+
+
+
+
 ## Installation
 
 1. **Clone the Repository**:
@@ -38,6 +48,14 @@ The SQL Agent project is an AI-powered tool that allows users to interact with S
    ```bash
    ./run.sh
    ```
+## Demo Video
+
+Watch the demo video to see SQL Agent in action:
+
+[![SQL Agent Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
+
+
+   
 
 ## Usage
 
